@@ -8,13 +8,12 @@ async function transpileComponent(folder, file) {
 
   const importedComponents = await getImports(
     getElementByTagName(componentElement, "imports"),
-    componentName,
     folder
   );
 
-  await getJs(getElementByTagName(componentElement, "js"), folder, className);
-
   currentComponentClassName = className;
+
+  await getJs(getElementByTagName(componentElement, "js"), folder);
 
   const componentHtml = transpileHtml(
     getElementByTagName(componentElement, "structure") ||
@@ -22,11 +21,12 @@ async function transpileComponent(folder, file) {
     importedComponents
   );
 
-  return componentHtml;
+  return { componentName, componentHtml };
 }
 
 async function getNames(componentElement, folder, file) {
-  const componentName = componentElement.getAttribute("name");
+  let componentName = componentElement.getAttribute("name");
+
   if (!componentName)
     throw new Error(
       "component does not have attribute 'name' - located at: " +
@@ -34,6 +34,8 @@ async function getNames(componentElement, folder, file) {
         "/" +
         file
     );
+
+  componentName = componentName.toUpperCase();
 
   return {
     componentName,
@@ -56,15 +58,20 @@ async function getComponentElement(folder, file) {
   return componentElement;
 }
 
-async function getImports(importsElement, componentName, currentFolder) {
+async function getImports(importsElement, currentFolder) {
   const imports = {};
 
   for (const importElement of (importsElement || document.createElement("div"))
     .children || []) {
-    imports[componentName] = await transpileComponent(
+    const { componentName, componentHtml } = await transpileComponent(
       currentFolder + importElement.getAttribute("folder"),
       importElement.getAttribute("file")
     );
+
+    imports[componentName] = {
+      className: currentComponentClassName,
+      componentHtml,
+    };
   }
 
   return imports;
@@ -75,7 +82,7 @@ function transpileHtml(parent, imports) {
 
   for (const node of parent.childNodes) {
     if (node.nodeName == "#text") {
-      transpiledString += transpileTextNode(node.textContent);
+      transpiledString += transpileText(node.textContent, "html");
     } else {
       if (node.tagName == "PAGEHEAD") {
         transpiledString += changeInnerHtml(
@@ -93,6 +100,8 @@ function transpileHtml(parent, imports) {
           transpileHtml(node, imports)
         ).outerHTML;
       } else {
+        componentCount++;
+        transpiledString += getComponentString(node, imports);
       }
     }
   }
@@ -100,12 +109,93 @@ function transpileHtml(parent, imports) {
   return transpiledString;
 }
 
-function transpileTextNode(textContent) {
-  //continue this
-  return textContent;
+function getComponentString(node, imports) {
+  const componentName = node.tagName;
+
+  const childrenString = transpileHtml(node, imports);
+
+  componentsJs["initialisations"] += `component${componentCount}: new ${
+    imports[componentName].className
+  }(${componentCount},${getPropsString(node)} ,\`${childrenString}\`),`;
+
+  return createElementString(
+    "div",
+    { "data-component-id": componentCount },
+    imports[componentName].componentHtml.replaceAll(
+      `<children></children>`,
+      childrenString
+    )
+  );
 }
 
-async function getJs(jsTag, folder, className) {
+function getPropsString(node) {
+  let propsString = "{";
+
+  for (const attributeName of node.getAttributeNames()) {
+    if (attributeName.substring(0, 2) == "on") {
+      //handle events
+    } else {
+      propsString += `
+      ${attributeName}:"${node.getAttribute(attributeName)}",
+      ${"set" + capitaliseFirstLetter(attributeName)}: function (newValue) {
+        this.${attributeName} = newValue;
+
+        for (const element of this.element.querySelectorAll("variable[name='this.props.${attributeName}']")) {
+          element.innerHTML = newValue;
+        }
+      }
+      `;
+    }
+  }
+
+  propsString += "}";
+
+  return propsString;
+}
+
+function transpileText(textContent, type) {
+  let inBrackets = false;
+  let readerValue = "";
+  let bracketValue = "";
+
+  for (const character of textContent) {
+    if (character == "{" || character == "}") {
+      inBrackets = !inBrackets;
+
+      if (character == "}") {
+        bracketValue = bracketValue.trim();
+
+        if (bracketValue == "this.children") {
+          readerValue += `<children></children>`;
+        } else {
+          readerValue += `<variable name="${bracketValue}"></variable>`;
+
+          if (
+            bracketValue.substring(0, "this.props.".length) != "this.props."
+          ) {
+            const variableName = bracketValue.substring("this.".length);
+            componentsJs[currentComponentClassName].variableSetters[
+              "set" + capitaliseFirstLetter(variableName)
+            ] = `
+          this.${variableName} = newValue;
+          for (const element of this.element.querySelectorAll("variable[name='${bracketValue}']")) {
+            element.innerHTML = newValue;
+          }
+          `;
+          }
+        }
+      }
+    } else if (inBrackets) {
+      bracketValue += character;
+    } else {
+      readerValue += character;
+    }
+  }
+
+  return readerValue;
+}
+
+async function getJs(jsTag, folder) {
   let jsString = "";
 
   if (jsTag) {
@@ -117,9 +207,8 @@ async function getJs(jsTag, folder, className) {
     }
   }
 
-  componentsJs[className] = {
+  componentsJs[currentComponentClassName] = {
     main: jsString.replaceAll("function", ""),
     variableSetters: {},
-    props: {},
   };
 }
