@@ -52,3 +52,20 @@ async function sha256(message) {
 function capitaliseFirstLetter(string) {
   return string[0].toUpperCase() + string.slice(1);
 }
+
+function camelCasePropString(propString) {
+  let readerValue = "";
+  let prevCharacterIsHyphen = false;
+
+  for (const character of propString) {
+    if (prevCharacterIsHyphen) {
+      readerValue += character.toUpperCase();
+    } else if (character != "-") {
+      readerValue += character;
+    }
+
+    prevCharacterIsHyphen = character == "-";
+  }
+
+  return readerValue;
+}

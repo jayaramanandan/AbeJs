@@ -14,6 +14,7 @@ async function transpileComponent(folder, file) {
   currentComponentClassName = className;
 
   await getJs(getElementByTagName(componentElement, "js"), folder);
+  getComponentProps(componentElement);
 
   const componentHtml = transpileHtml(
     getElementByTagName(componentElement, "structure") ||
@@ -77,6 +78,25 @@ async function getImports(importsElement, currentFolder) {
   return imports;
 }
 
+function getComponentProps(componentElement) {
+  for (const attributeName of componentElement.getAttributeNames()) {
+    if (attributeName != "name") {
+      const propName = camelCasePropString(attributeName);
+
+      componentsJs[currentComponentClassName].propsBlueprint[propName] =
+        "undefined";
+      componentsJs[currentComponentClassName].propsBlueprint[
+        "set" + capitaliseFirstLetter(propName)
+      ] = `
+      this.${propName} = newValue;
+      for (const element of this.element.querySelectorAll("variable[name='this.props.${propName}']")) {
+          element.innerHTML = newValue;
+      }
+      `;
+    }
+  }
+}
+
 function transpileHtml(parent, imports) {
   let transpiledString = "";
 
@@ -111,12 +131,16 @@ function transpileHtml(parent, imports) {
 
 function getComponentString(node, imports) {
   const componentName = node.tagName;
+  const componentClassName = imports[componentName].className;
 
   const childrenString = transpileHtml(node, imports);
 
-  componentsJs["initialisations"] += `component${componentCount}: new ${
-    imports[componentName].className
-  }(${componentCount},${getPropsString(node)} ,\`${childrenString}\`),`;
+  componentsJs[
+    "initialisations"
+  ] += `component${componentCount}: new ${componentClassName}(${componentCount},${getPropsString(
+    node,
+    componentsJs[componentClassName].propsBlueprint
+  )} ,\`${childrenString}\`),`;
 
   return createElementString(
     "div",
@@ -128,22 +152,21 @@ function getComponentString(node, imports) {
   );
 }
 
-function getPropsString(node) {
+function getPropsString(node, componentPropsBlueprint) {
   let propsString = "{";
 
   for (const attributeName of node.getAttributeNames()) {
     if (attributeName.substring(0, 2) == "on") {
-      //handle events
     } else {
-      propsString += `
-      ${attributeName}:"${node.getAttribute(attributeName)}",
-      ${"set" + capitaliseFirstLetter(attributeName)}: function (newValue) {
-        this.${attributeName} = newValue;
+      const propName = camelCasePropString(attributeName);
 
-        for (const element of this.element.querySelectorAll("variable[name='this.props.${attributeName}']")) {
-          element.innerHTML = newValue;
-        }
-      }
+      const setterFunctionName = "set" + capitaliseFirstLetter(propName);
+
+      propsString += `
+      ${propName}: "${node.getAttribute(attributeName)}",
+      ${setterFunctionName}: function (newValue) { 
+        ${componentPropsBlueprint[setterFunctionName]}
+      },
       `;
     }
   }
@@ -174,6 +197,7 @@ function transpileText(textContent, type) {
             bracketValue.substring(0, "this.props.".length) != "this.props."
           ) {
             const variableName = bracketValue.substring("this.".length);
+
             componentsJs[currentComponentClassName].variableSetters[
               "set" + capitaliseFirstLetter(variableName)
             ] = `
@@ -184,6 +208,8 @@ function transpileText(textContent, type) {
           `;
           }
         }
+
+        bracketValue = "";
       }
     } else if (inBrackets) {
       bracketValue += character;
@@ -210,5 +236,6 @@ async function getJs(jsTag, folder) {
   componentsJs[currentComponentClassName] = {
     main: jsString.replaceAll("function", ""),
     variableSetters: {},
+    propsBlueprint: {},
   };
 }

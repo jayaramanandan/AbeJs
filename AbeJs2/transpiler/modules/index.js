@@ -4,7 +4,7 @@ this.set...html content X
 this.element X
 this.children (dynamic) X
 replace {} with actual value X
-make props unqiue to all instances of an element
+make props unqiue to all instances of an element X
 this.set... props content
 dynamic events
 sub structures
@@ -81,6 +81,8 @@ function getVariableSettersString(componentClassName) {
   for (const key in componentsJs[componentClassName].variableSetters) {
     variableSettersString += `${key} (newValue) {${componentsJs[componentClassName]["variableSetters"][key]}}`;
   }
+
+  console.log(variableSettersString);
 
   return variableSettersString;
 }

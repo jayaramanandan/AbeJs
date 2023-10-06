@@ -24,10 +24,11 @@ class NAVBARf548caff2b9662845baaa0981d14664755e1c0dc4eda52ecb7aeb48c7b6d831b ext
   }
 
   init() {
-    this.setCount(1);
+    this.setCount(0);
     this.element.onclick = () => {
-      this.props.setName("hello");
       this.setCount(this.count + 1);
+      this.props.setPageName("hello");
+      this.props.setHelloString("hello string");
     };
   }
 
@@ -45,19 +46,18 @@ var components = {
     new NAVBARf548caff2b9662845baaa0981d14664755e1c0dc4eda52ecb7aeb48c7b6d831b(
       0,
       {
-        name: "no wat",
-        setName: function (newValue) {
-          this.name = newValue;
-
+        helloString: "no wat",
+        setHelloString: function (newValue) {
+          this.helloString = newValue;
           for (const element of this.element.querySelectorAll(
-            "variable[name='this.props.name']"
+            "variable[name='this.props.helloString']"
           )) {
             element.innerHTML = newValue;
           }
         },
       },
       `
-        <h4>hello</h4>
+        <u>stuff</u>
       `
     ),
 };
