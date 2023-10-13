@@ -80,7 +80,7 @@ async function getImports(importsElement, currentFolder) {
 
 function getComponentProps(componentElement) {
   for (const attributeName of componentElement.getAttributeNames()) {
-    if (attributeName != "name") {
+    if (attributeName != "name" && attributeName != "data-element-id") {
       const propName = camelCasePropString(attributeName);
 
       componentsJs[currentComponentClassName].propsBlueprint[propName] =
@@ -104,6 +104,33 @@ function transpileHtml(parent, imports) {
     if (node.nodeName == "#text") {
       transpiledString += transpileText(node.textContent, "html");
     } else {
+      for (const attributeName of node.getAttributeNames()) {
+        if (attributeName[0] == "{") {
+          const attributeNameInsideBrackets = attributeName.substring(
+            1,
+            attributeName.length - 1
+          );
+          const { variables, setterString } = getVariablesFromString(
+            node.getAttribute(attributeName)
+          );
+
+          node.removeAttribute(attributeName);
+
+          node.setAttribute(attributeNameInsideBrackets, setterString);
+
+          for (const propName of variables.propsVariables) {
+            componentsJs[currentComponentClassName].propsBlueprint[
+              `set${capitaliseFirstLetter(propName)}`
+            ] += `this.element.querySelector("[data-element-id='${elementCount}']").setAttribute(\`${attributeNameInsideBrackets}\`, \`${setterString}\`);`;
+          }
+        }
+
+        if (!node.getAttribute("data-element-id")) {
+          node.setAttribute("data-element-id", elementCount);
+          elementCount++;
+        }
+      }
+
       if (node.tagName == "PAGEHEAD") {
         transpiledString += changeInnerHtml(
           changeTagName(node, "head"),
@@ -129,54 +156,122 @@ function transpileHtml(parent, imports) {
   return transpiledString;
 }
 
+function getVariablesFromString(text) {
+  let inBrackets = false;
+  let variableName = "";
+  let readerValue = "";
+  let variables = { propsVariables: [], normalVariables: [] };
+
+  for (const character of text) {
+    if (character == "{" || character == "}") {
+      inBrackets = !inBrackets;
+
+      if (character == "}") {
+        if (variableName.substring(0, "this.props.".length) == "this.props.") {
+          variables.propsVariables.push(
+            variableName.substring("this.props.".length)
+          );
+        } else {
+          variables.normalVariables.push(
+            variableName.substring("this.".length)
+          );
+        }
+
+        variableName = "";
+      }
+    } else if (inBrackets) {
+      variableName += character;
+    } else {
+      readerValue += character;
+    }
+  }
+
+  return { variables, setterString: readerValue };
+}
+
 function getComponentString(node, imports) {
   const componentName = node.tagName;
   const componentClassName = imports[componentName].className;
 
   const childrenString = transpileHtml(node, imports);
+  const { propsString, propsObject } = getPropsStringAndObject(
+    node,
+    componentsJs[componentClassName].propsBlueprint
+  );
 
   componentsJs[
     "initialisations"
-  ] += `component${componentCount}: new ${componentClassName}(${componentCount},${getPropsString(
-    node,
-    componentsJs[componentClassName].propsBlueprint
-  )} ,\`${childrenString}\`),`;
+  ] += `component${componentCount}: new ${componentClassName}(${componentCount},${propsString} ,\`${childrenString}\`),`;
 
   return createElementString(
     "div",
     { "data-component-id": componentCount },
-    imports[componentName].componentHtml.replaceAll(
-      `<children></children>`,
+    replacePropsAndChildren(
+      imports[componentName].componentHtml,
+      propsObject,
       childrenString
     )
   );
 }
 
-function getPropsString(node, componentPropsBlueprint) {
+function replacePropsAndChildren(componentHtml, propsObject, childrenString) {
+  let tempComponentHtmlHolder = document.createElement("div");
+  tempComponentHtmlHolder.innerHTML = componentHtml;
+
+  tempComponentHtmlHolder = replaceAllElements(
+    tempComponentHtmlHolder,
+    "children",
+    childrenString
+  );
+
+  for (const propName in propsObject) {
+    tempComponentHtmlHolder = replaceAllElements(
+      tempComponentHtmlHolder,
+      `variable[name='this.props.${propName}']`,
+      propsObject[propName]
+    );
+  }
+
+  return tempComponentHtmlHolder.innerHTML;
+}
+
+function getPropsStringAndObject(node, componentPropsBlueprint) {
   let propsString = "{";
+  const propsObject = {};
 
   for (const attributeName of node.getAttributeNames()) {
     if (attributeName.substring(0, 2) == "on") {
-    } else {
+    } else if (attributeName != "data-element-id") {
       const propName = camelCasePropString(attributeName);
+      const propValue = node.getAttribute(attributeName);
+
+      propsObject[propName] = propValue;
 
       const setterFunctionName = "set" + capitaliseFirstLetter(propName);
 
       propsString += `
-      ${propName}: "${node.getAttribute(attributeName)}",
-      ${setterFunctionName}: function (newValue) { 
+      "${propName}": "${propValue}",
+      "${setterFunctionName}": function (newValue) { 
         ${componentPropsBlueprint[setterFunctionName]}
       },
       `;
     }
   }
 
+  for (const propName in componentPropsBlueprint) {
+    if (propName.substring(0, "set".length) != "set") {
+      if (!propsObject[propName]) {
+        propsObject[propName] = "undefined";
+      }
+    }
+  }
+
   propsString += "}";
 
-  return propsString;
+  return { propsString, propsObject };
 }
 
-function transpileText(textContent, type) {
+function transpileText(textContent) {
   let inBrackets = false;
   let readerValue = "";
   let bracketValue = "";

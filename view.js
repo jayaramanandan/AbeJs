@@ -27,7 +27,6 @@ class NAVBARf548caff2b9662845baaa0981d14664755e1c0dc4eda52ecb7aeb48c7b6d831b ext
     this.setCount(0);
     this.element.onclick = () => {
       this.setCount(this.count + 1);
-      this.props.setPageName("hello");
       this.props.setHelloString("hello string");
     };
   }
@@ -54,6 +53,19 @@ var components = {
           )) {
             element.innerHTML = newValue;
           }
+        },
+
+        pageName: "pag ename here",
+        setPageName: function (newValue) {
+          this.pageName = newValue;
+          for (const element of this.element.querySelectorAll(
+            "variable[name='this.props.pageName']"
+          )) {
+            element.innerHTML = newValue;
+          }
+          this.element
+            .querySelector("[data-element-id='0']")
+            .setAttribute(`class`, `${this.props.pageName} what ${this.count}`);
         },
       },
       `

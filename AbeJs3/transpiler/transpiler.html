@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Transpiling...</title>
+  </head>
+  <body>
+    <div class="container">
+      <div class="cup">
+        <div class="liquid"></div>
+      </div>
+      <div class="handle"></div>
+    </div>
+
+    <style>
+      body {
+        background-color: rgb(48, 46, 46);
+      }
+
+      .container {
+        height: 100%;
+        width: 100%;
+        display: flex;
+      }
+
+      .cup {
+        margin: auto;
+        margin-top: 40vh;
+        width: 15%;
+        height: 40vh;
+        background-color: transparent;
+        border: 10px solid rgb(236, 228, 211);
+        border-top: 0;
+        border-bottom-right-radius: 50px;
+        border-bottom-left-radius: 50px;
+        display: flex;
+        align-items: flex-end;
+      }
+
+      .liquid {
+        background-color: #bc7b3b;
+        width: 100%;
+        height: 0%;
+        border-bottom-right-radius: 39px;
+        border-bottom-left-radius: 39px;
+        opacity: 0.5;
+        animation: fill-cup 4s;
+        animation-fill-mode: forwards;
+      }
+
+      @keyframes fill-cup {
+        100% {
+          height: 90%;
+        }
+      }
+    </style>
+  </body>
+
+  <script src="/files?path=/transpiler/modules/helpers.js"></script>
+  <script src="/files?path=/transpiler/modules/transpileComponent.js"></script>
+  <script src="/files?path=/transpiler/modules/index.js"></script>
+</html>

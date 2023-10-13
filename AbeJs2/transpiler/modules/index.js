@@ -6,9 +6,11 @@ this.children (dynamic) X
 replace {} with actual value X
 make props unqiue to all instances of an element X
 this.set... props content
+getElement function
 dynamic events
 sub structures
 styles
+dynamic styles
 */
 
 const helperModulesJs = `
@@ -35,6 +37,7 @@ var componentsJs = {
 };
 var currentComponentClassName = "";
 var componentCount = -1;
+var elementCount = 0;
 
 async function main() {
   const page = document.createElement("html");
@@ -81,8 +84,6 @@ function getVariableSettersString(componentClassName) {
   for (const key in componentsJs[componentClassName].variableSetters) {
     variableSettersString += `${key} (newValue) {${componentsJs[componentClassName]["variableSetters"][key]}}`;
   }
-
-  console.log(variableSettersString);
 
   return variableSettersString;
 }
