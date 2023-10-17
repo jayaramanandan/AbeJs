@@ -1,10 +1,5 @@
-const componentsJs = {
-  staticJs: "",
-  componentCount: 0,
-  classes: {},
-  instances: {},
-};
-
-async function main() {}
+async function main() {
+  const app = new App("App.html");
+}
 
 main();
