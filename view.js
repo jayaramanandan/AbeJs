@@ -1,75 +1,30 @@
-function stringToHtml(htmlString) {
-  const tempElement = document.createElement("div");
-  tempElement.innerHTML = htmlString;
-
-  return tempElement.children;
-}
-
-class Component {
-  constructor(componentId, props, childrenString) {
+class NAVBAR71c3817ea30587297c53311b3db43cd36f0ed2c5c6cd2487baabd68069012f72 {
+  constructor(componentCount, props, childrenString) {
     this.element = document.querySelector(
-      "div[data-component-id='" + componentId + "']"
+      "div[data-component-count='" + componentCount + "']"
     );
-    this.children = stringToHtml(childrenString);
     this.props = props;
     this.props["element"] = this.element;
 
-    this.init();
-  }
-}
-
-class NAVBARf548caff2b9662845baaa0981d14664755e1c0dc4eda52ecb7aeb48c7b6d831b extends Component {
-  constructor(...args) {
-    super(...args);
+    let tempChildrenElement = document.createElement(div);
+    tempChildrenElement.innerHTML = childrenString;
+    this.children = tempChildrenElement.children;
   }
 
-  init() {
-    this.setCount(0);
-    this.element.onclick = () => {
-      this.setCount(this.count + 1);
-      this.props.setHelloString("hello string");
-    };
-  }
+  init() {}
 
-  setCount(newValue) {
-    this.count = newValue;
+  setName(newValue) {
     for (const element of this.element.querySelectorAll(
-      "variable[name='this.count']"
+      "variable[name='" + "this.name" + "']"
     )) {
       element.innerHTML = newValue;
     }
+
+    for (const element of document.querySelectorAll(
+      "[data-variable-this-name]"
+    )) {
+      const variableValue = element.getAttribute("data-variable-this-name");
+      element.setAttribute("class", `hello ${variableValue} what`);
+    }
   }
 }
-var components = {
-  component0:
-    new NAVBARf548caff2b9662845baaa0981d14664755e1c0dc4eda52ecb7aeb48c7b6d831b(
-      0,
-      {
-        helloString: "no wat",
-        setHelloString: function (newValue) {
-          this.helloString = newValue;
-          for (const element of this.element.querySelectorAll(
-            "variable[name='this.props.helloString']"
-          )) {
-            element.innerHTML = newValue;
-          }
-        },
-
-        pageName: "pag ename here",
-        setPageName: function (newValue) {
-          this.pageName = newValue;
-          for (const element of this.element.querySelectorAll(
-            "variable[name='this.props.pageName']"
-          )) {
-            element.innerHTML = newValue;
-          }
-          this.element
-            .querySelector("[data-element-id='0']")
-            .setAttribute(`class`, `${this.props.pageName} what ${this.count}`);
-        },
-      },
-      `
-        <u>stuff</u>
-      `
-    ),
-};

@@ -77,3 +77,10 @@ function replaceAllElements(htmlElement, querySelector, newElementString) {
 
   return htmlElement;
 }
+
+function convertToElement(htmlString) {
+  const tempElement = document.createElement("div");
+  tempElement.innerHTML = htmlString;
+
+  return tempElement;
+}

@@ -55,7 +55,7 @@ startServer(PORT, [["/", "../app"]], {
       ...req.query["path"].split("/")
     );
 
-    if (configs["typescript"]) {
+    if (req.query["path"].substring(req.query["path"].length - 2) == "ts") {
       res.send(
         tsCompile(readFileSync(filePath, "utf-8"), configs["typescript"])
       );
