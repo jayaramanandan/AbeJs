@@ -93,3 +93,12 @@ function isWhitespace(character) {
     character == "\r"
   );
 }
+
+function getSrcDetails(srcString) {
+  const splitPath = srcString.split("/");
+
+  return {
+    file: splitPath[splitPath.length - 1],
+    folder: splitPath.slice(0, length - 1).join("/"),
+  };
+}

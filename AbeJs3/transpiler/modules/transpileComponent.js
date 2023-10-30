@@ -1,12 +1,7 @@
 class App {
   componentsJs = {
     staticJs: "",
-    componentMainJs: {
-      main: "",
-      setters: {
-        name: "",
-      },
-    },
+    componentMainJs: {},
     instances: {},
   };
 
@@ -36,25 +31,39 @@ class App {
             }
 
             ${this.componentsJs.componentMainJs[className].main}
+          `;
 
-            ${(() => {
-              let setterString = "";
+        for (const setterVariableName in this.componentsJs.componentMainJs[
+          className
+        ].setters) {
+          totalJs += `
+          set${capitaliseFirstLetter(setterVariableName)}(newValue) {
+            for (const element of this.element.querySelectorAll("variable[name='" + "this.${setterVariableName}" + "']")) {
+              element.innerHTML = newValue;
+            }
 
-              for (const setterName of this.componentsJs.componentMainJs[
-                className
-              ].setters) {
-                setterString +=
-                  setterName +
-                  "() {" +
-                  this.componentsJs.componentMainJs[className].setters[
-                    setterName
-                  ] +
-                  "}";
-              }
+            for (const element of document.querySelectorAll(
+              "[data-variable-this-${setterVariableName}]"
+            )) {
+              const variableValue = element.getAttribute("data-variable-this-${setterVariableName}");
+          `;
 
-              return setterString;
-            })()}
-          }`;
+          if (
+            this.componentsJs.componentMainJs[className].setters[
+              setterVariableName
+            ].length != 0
+          ) {
+            for (const dynamicPropName of this.componentsJs.componentMainJs[
+              className
+            ].setters[setterVariableName]) {
+              totalJs += `element.setAttribute("${dynamicPropName}", newValue)`;
+            }
+            totalJs += "}";
+          }
+          totalJs += "}";
+        }
+
+        totalJs += "}";
       }
 
       console.log(totalJs);
@@ -71,12 +80,18 @@ class App {
 
     const importedComponents = await this.getImports(componentHtml, folder);
 
+    await this.storeClass(componentClassName, componentHtml, folder);
+
+    if (componentClassName.substring(0, 3) != "APP") {
+      this.componentsJs.componentMainJs[componentClassName].props =
+        this.getProps(componentHtml);
+    }
+
     const html = await this.transpileHtml(
       getElementByTagName(componentHtml, "structure", componentClassName),
-      importedComponents
+      importedComponents,
+      componentClassName
     );
-
-    await this.storeClass(componentClassName, componentHtml, folder);
 
     return {
       name: componentName,
@@ -130,18 +145,43 @@ class App {
     return imports;
   }
 
+  getProps(componentHtml) {
+    const props = {};
+
+    for (const attributeName of getElementByTagName(
+      componentHtml,
+      "component"
+    ).getAttributeNames()) {
+      if (attributeName != "name") {
+        props[attributeName] = "";
+      }
+    }
+
+    return props;
+  }
+
   async transpileHtml(parent, imports, componentClassName) {
     let transpileString = "";
 
     for (const node of parent.childNodes) {
       if (node.nodeName === "#text") {
-        transpileString += this.transpileText(node.textContent, true);
+        transpileString += this.transpileText(
+          node.textContent,
+          true,
+          componentClassName
+        );
       } else {
         for (const attributeName of node.getAttributeNames()) {
-          node.setAttribute(
-            attributeName,
-            this.transpileText(node.getAttribute(attributeName), false)
-          );
+          if (attributeName[0] == "{") {
+            node.setAttribute(
+              attributeName.substring(1, attributeName.length - 1),
+              this.transpileText(
+                node.getAttribute(attributeName),
+                false,
+                componentClassName
+              )
+            );
+          }
         }
 
         if (node.tagName === "PAGEBODY") {
@@ -171,17 +211,40 @@ class App {
     return transpileString;
   }
 
-  transpileText(text, inHtml) {
+  transpileText(text, inHtml, componentClassName) {
     let readerValue = "";
+    let inBrackets = false;
+    let bracketString = "";
 
     //deal with adding setters to this.componentsJs
 
     if (inHtml) {
       for (const character of text) {
-        if (character == "{") {
-          readerValue += '<variable name="';
-        } else if (character == "}") {
-          readerValue += '"></variable>';
+        if (character == "{" || character == "}") {
+          inBrackets = !inBrackets;
+
+          if (character == "}") {
+            if (bracketString == "this.children") {
+              // do something here if this.children
+            } else if (
+              bracketString.substring(0, "this.props.".length) == "this.props."
+            ) {
+              // do something if this.props.
+            } else {
+              const variableName = bracketString.substring("this.".length);
+
+              console.log(bracketString);
+              this.componentsJs.componentMainJs[componentClassName].setters[
+                variableName
+              ] = [];
+
+              readerValue += `<variable name="this.${variableName}"></variable>`;
+            }
+
+            bracketString = "";
+          }
+        } else if (inBrackets && !isWhitespace(character)) {
+          bracketString += character;
         } else {
           readerValue += character;
         }
@@ -214,9 +277,18 @@ class App {
     if (jsTag) {
       const jsSrc = jsTag.getAttribute("src");
 
+      if (!this.componentsJs.componentMainJs[componentClassName]) {
+        this.componentsJs.componentMainJs[componentClassName] = {
+          main: "",
+          setters: {},
+          props: {},
+        };
+      }
+
       if (jsSrc) {
-        this.componentsJs.componentMainJs[componentClassName].main =
-          await readFile(folderPath + "/" + jsSrc).replaceAll("function ", "");
+        this.componentsJs.componentMainJs[componentClassName].main = (
+          await readFile(folderPath + "/" + jsSrc)
+        ).replaceAll("function ", "");
       } else {
         this.componentsJs.componentMainJs[componentClassName].main =
           jsTag.innerHTML.replaceAll("function", "");
