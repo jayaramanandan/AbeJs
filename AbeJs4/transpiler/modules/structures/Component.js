@@ -8,6 +8,7 @@ class Component {
   className = undefined;
   js = undefined;
   html = document.createElement("div");
+  props = {};
 
   async create(componentImportPath, isRoot) {
     app.componentCount++;
@@ -102,11 +103,43 @@ class Component {
 
   async transpileJs() {
     const jsTag = getElementByTagName(this.componentHtml, "js");
+    let mainJs = "";
 
     if (jsTag) {
-      this.js = (
-        await readFile(this.folder + "/" + jsTag.getAttribute("src"))
-      ).replaceAll("function ", "");
+      const jsSrc = jsTag.getAttribute("src");
+
+      mainJs = jsSrc
+        ? await readFile(this.folder + "/" + jsSrc)
+        : jsTag.innerHTML;
+
+      mainJs = mainJs.replaceAll("function ", "");
     }
+
+    this.js = `
+    class ${this.className} {
+      props = {
+        element: this.element,
+        ${joinString(this.props.propNames, (propName) => {
+          return `
+            set${capitaliseFirstLetter(propName)}: function(newValue) {
+              for (const element of this.element.querySelectorAll("variable[name='this.props.${propName}']")) {
+                element.innerHTML = newValue;
+              }
+
+              this.element.querySelector()
+              ${this.props.}
+            }
+            `;
+        })}
+      }
+
+      constructor(componentId, props) {
+        this.element = docment.querySelector("[data-component-id='" + componentId + "']");
+        Object.assign(, props)
+
+        (true && this.init)();
+      }
+    }
+    `;
   }
 }

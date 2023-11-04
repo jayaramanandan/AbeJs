@@ -102,3 +102,13 @@ function getSrcDetails(srcString) {
     folder: splitPath.slice(0, length - 1).join("/"),
   };
 }
+
+function joinString(iteratingArray, stringFunction) {
+  let returnString = "";
+
+  for (const item of iteratingArray) {
+    returnString += stringFunction(item);
+  }
+
+  return returnString;
+}
