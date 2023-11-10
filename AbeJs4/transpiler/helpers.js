@@ -1,6 +1,10 @@
-async function readFile(path) {
-  return await (await fetch("/files?path=app/" + path)).text();
-}
+const { createHash } = require("crypto");
+const { readFileSync } = require("fs");
+const path = require("path");
+const ts = require("typescript");
+const { JSDOM } = require("jsdom");
+
+const document = new JSDOM("").window.document;
 
 function getElementByTagName(parent, tagName) {
   return parent.getElementsByTagName(tagName)[0];
@@ -39,14 +43,10 @@ function createElementString(tagName, attributes, innerHtml) {
   return newElement.outerHTML;
 }
 
-async function sha256(message) {
-  return Array.from(
-    new Uint8Array(
-      await crypto.subtle.digest("SHA-256", new TextEncoder().encode(message))
-    )
-  )
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+function sha256(message) {
+  return Buffer.from(
+    createHash("sha256").update(message).digest("hex")
+  ).toString("hex");
 }
 
 function capitaliseFirstLetter(string) {
@@ -95,11 +95,11 @@ function isWhitespace(character) {
 }
 
 function getSrcDetails(srcString) {
-  const splitPath = srcString.split("/");
+  const parsedPath = path.parse(srcString);
 
   return {
-    file: splitPath[splitPath.length - 1],
-    folder: splitPath.slice(0, length - 1).join("/"),
+    file: parsedPath.base,
+    folder: parsedPath.dir,
   };
 }
 
@@ -112,3 +112,32 @@ function joinString(iteratingArray, stringFunction) {
 
   return returnString;
 }
+
+function tsCompile(source, options) {
+  if (!options) {
+    options = { compilerOptions: { module: ts.ModuleKind.CommonJS } };
+  }
+  return ts.transpileModule(source, options).outputText;
+}
+
+function readFile(filePath) {
+  return readFileSync(path.join(__dirname, "../", filePath), "utf-8");
+}
+
+module.exports = {
+  getElementByTagName,
+  isValidElement,
+  changeInnerHtml,
+  changeTagName,
+  createElementString,
+  sha256,
+  capitaliseFirstLetter,
+  camelCasePropString,
+  replaceAllElements,
+  convertToElement,
+  isWhitespace,
+  getSrcDetails,
+  joinString,
+  tsCompile,
+  readFile,
+};

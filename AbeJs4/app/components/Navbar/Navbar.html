@@ -1,11 +1,7 @@
 <component name="navbar" page-name hello-string>
-  <structure
-    >this is the navbar -> {this.props.pageName}
-    <h4 {class}="{this.props.pageName} what {this.count}">
-      this is the count: {this.count} wow this works
-    </h4>
-    <h4>{this.children} {this.props.helloString}</h4>
+  <structure>
+    <h4>{this.children} {this.props.color}</h4>
   </structure>
 
-  <js src="Navbar.js"></js>
+  <js src="Navbar.ts"></js>
 </component>

@@ -2,9 +2,9 @@
   "name": "abejs",
   "version": "1.0.0",
   "description": "",
-  "main": "transpiler/server.js",
+  "main": "main.js",
   "scripts": {
-    "start": "nodemon transpiler/server.js"
+    "start": "nodemon main.js"
   },
   "author": "",
   "license": "ISC",
@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "express": "^4.18.2",
+    "jsdom": "^22.1.0",
+    "parse5": "^7.1.2",
     "typescript": "^5.2.2"
   }
 }
