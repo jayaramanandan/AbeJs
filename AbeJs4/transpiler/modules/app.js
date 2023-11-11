@@ -27,7 +27,9 @@ class App {
 
     this.readFile = (src) => readFile(folder + "/" + src);
 
-    this.rootComponent = new Component(file);
+    this.rootComponent = new Component(file, true).instantiate(
+      this.document.createElement("div")
+    );
 
     this.script += "var components = {";
 
