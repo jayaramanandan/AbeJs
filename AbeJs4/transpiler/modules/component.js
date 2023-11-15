@@ -11,6 +11,13 @@ const {
 
 const { getLatestApp } = require("./appManager");
 
+const DynamicStringTypes = {
+  INHTML: 0,
+  INJSPROPSOBJECT: 1,
+  INJSCOMPONENTOBJECT: 2,
+  INPROPSSTRING: 3,
+};
+
 class Component {
   app = getLatestApp();
   componentHtml = this.app.document.createElement("div");
@@ -25,6 +32,11 @@ class Component {
   props = {};
   componentId = 0;
   childrenString = "";
+  variables = {
+    count: {
+      0: "hello {this.count}",
+    },
+  };
 
   constructor(componentImportPath, isRoot) {
     this.componentImportPath = componentImportPath;
@@ -107,19 +119,21 @@ class Component {
 
     for (const node of parent.childNodes) {
       if (node.nodeName == "#text") {
-        transpiledString += this.replacePropStrings(node.textContent);
+        transpiledString += this.replacePropStrings(
+          node.textContent,
+          DynamicStringTypes.INHTML
+        );
       } else {
         for (const attributeName of node.getAttributeNames()) {
           if (attributeName[0] == "{") {
             if (attributeName[attributeName.length - 1] == "}") {
-              node.setAttribute("data-element-id", this.elementCount);
-
               const insideBracketsAttributeName = attributeName.substring(
                 1,
                 attributeName.length - 1
               );
               const setterString = this.replacePropStrings(
-                node.getAttribute(attributeName)
+                node.getAttribute(attributeName),
+                DynamicStringTypes.INPROPSSTRING
               );
 
               for (const variableName of this.getVariableNamesFromString(
@@ -143,7 +157,10 @@ class Component {
               node.removeAttribute(attributeName);
               node.setAttribute(insideBracketsAttributeName, setterString);
 
-              this.elementCount++;
+              if (!node.getAttribute("data-element-id")) {
+                node.setAttribute("data-element-id", this.elementCount);
+                this.elementCount++;
+              }
             } else {
               throw new Error(`
                   ${node.outerHTML}
@@ -184,7 +201,7 @@ class Component {
     return transpiledString;
   }
 
-  replacePropStrings(text) {
+  replacePropStrings(text, type) {
     let inBrackets = false;
     let returnString = "";
     let insideBracketsValue = "";
@@ -199,10 +216,45 @@ class Component {
           insideBracketsValue.substring(0, "this.props.".length) ==
           "this.props."
         ) {
-          returnString +=
-            this.props[insideBracketsValue.substring("this.props.".length)]
-              .value;
-        } else {
+          // in-html <variable name="this.variableName">[insert variable value here]</variable>
+          // in-js-props-object `stuff here boop bap ${this.component.variableName} wow ${this.propName} ok ${this.component.children}`
+          // in-js-component-object `stuff here boop bap ${this.variableName} wow ${this.props.propName} ok ${this.children}`
+          // in-props-string "stuff stuff [insert variable value here] wow {this.variableName}"
+
+          let variable;
+
+          if (type == 0) {
+            variable =
+              this.props[insideBracketsValue.substring("this.props.".length)]
+                .value;
+          } else if (type == 1) {
+            if (this.isPropVariable(insideBracketsValue)) {
+              variable =
+                "this." + insideBracketsValue.substring("this.props.".length);
+            } else {
+              variable =
+                "this.component." +
+                insideBracketsValue.substring("this.".length);
+            }
+          } else if (type == 2) {
+            variable = insideBracketsValue;
+          } else {
+            if (this.isPropVariable(insideBracketsValue)) {
+              variable =
+                this.props[insideBracketsValue.substring("this.props.".length)]
+                  .value;
+            } else {
+              variable = insideBracketsValue;
+            }
+          }
+
+          if (type == 0) {
+            returnString += `<variable name="${insideBracketsValue}">${variable}</variable>`;
+          } else if (type == 1 || type == 2) {
+            returnString += "${" + variable + "}";
+          } else {
+            returnString += variable;
+          }
         }
 
         inBrackets = false;
@@ -215,6 +267,10 @@ class Component {
     }
 
     return returnString;
+  }
+
+  isPropVariable(variableName) {
+    return variableName.substring(0, "this.props.".length) == "this.props.";
   }
 
   getVariableNamesFromString(text) {
@@ -262,7 +318,7 @@ class Component {
         return temp;
       })();
       public props: any = {
-        element: this.element,
+        component: this,
       `;
 
     for (const propName in this.props) {
@@ -286,7 +342,7 @@ class Component {
       for (const elementId in this.props[propName]) {
         if (elementId != "value") {
           this.app.script += `
-        tempElement = this.element.querySelector("[data-element-id='${elementId}']");
+        tempElement = this.component.element.querySelector("[data-element-id='${elementId}']");
         const commponentId = tempElement.getAttribute("data-component-id");
         if (commponentId) tempElement = components["component" + componentId];
         `;
@@ -301,7 +357,10 @@ class Component {
             this.app.script += `
           tempElement.setAttribute("${capitaliseFirstLetter(
             dynamicAttributeName
-          )}", \`${attributeSetterString}\`);
+          )}", \`${this.replacePropStrings(
+              attributeSetterString,
+              DynamicStringTypes.INJSPROPSOBJECT
+            )}\`);
           `;
           }
         }

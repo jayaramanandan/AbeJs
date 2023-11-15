@@ -1,6 +1,9 @@
 <component name="navbar" page-name hello-string color>
   <structure>
-    <h4 {style}="background-color:{this.props.color};">
+    <h4
+      {style}="background-color:{this.props.color};"
+      {aria-label}="{this.props.color}"
+    >
       {this.children} {this.props.color}
     </h4>
   </structure>

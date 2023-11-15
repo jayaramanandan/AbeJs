@@ -21,7 +21,6 @@ class App {
     const { folder, file } = getSrcDetails(rootSrc);
 
     this.configs = JSON.parse(readFile(folder + "/" + "config.json"));
-    this.PORT = this.configs["port"];
 
     this.document = new JSDOM(readFile(rootSrc)).window.document;
 
