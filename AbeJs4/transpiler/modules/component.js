@@ -395,22 +395,4 @@ module.exports = Component;
 
 // 165
 // 148
-
-/*
-for (const elementId in this.variables[variableName]) {
-        this.app.script += `
-        tempElement = this.element.querySelector("[data-element-id='${elementId}']");
-        tempComponentId = tempElement.getAttribute("data-component-id");
-        if (tempComponentId) tempElement = components["component" + tempComponentId];
-        `;
-
-        for (const dynamicAttributeName in this.variables[variableName][
-          elementId
-        ]) {
-          this.app.script += `tempElement.setAttribute("${dynamicAttributeName}", \`${this.replacePropStrings(
-            this.variables[variableName][elementId][dynamicAttributeName],
-            DynamicStringTypes.INJSCOMPONENTOBJECT
-          )}\`)`;
-        }
-      }
-*/
+// 139
