@@ -1,4 +1,8 @@
 {
   "port": 5000,
-  "typescript": {}
+  "typescript": {
+    "compilerOptions": {
+      "target": "es6"
+    }
+  }
 }

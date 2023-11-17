@@ -32,11 +32,7 @@ class Component {
   props = {};
   componentId = 0;
   childrenString = "";
-  variables = {
-    count: {
-      0: "hello {this.count}",
-    },
-  };
+  variables = {};
 
   constructor(componentImportPath, isRoot) {
     this.componentImportPath = componentImportPath;
@@ -133,7 +129,8 @@ class Component {
               );
               const setterString = this.replacePropStrings(
                 node.getAttribute(attributeName),
-                DynamicStringTypes.INPROPSSTRING
+                DynamicStringTypes.INPROPSSTRING,
+                insideBracketsAttributeName
               );
 
               for (const variableName of this.getVariableNamesFromString(
@@ -149,8 +146,8 @@ class Component {
                     this.props[propName][this.elementCount] = {};
 
                   this.props[propName][this.elementCount][
-                    insideBracketsAttributeName
-                  ] = setterString;
+                    capitaliseFirstLetter(insideBracketsAttributeName)
+                  ] = node.getAttribute(attributeName).replaceAll("{", "${");
                 }
               }
 
@@ -201,7 +198,7 @@ class Component {
     return transpiledString;
   }
 
-  replacePropStrings(text, type) {
+  replacePropStrings(text, type, attributeName) {
     let inBrackets = false;
     let returnString = "";
     let insideBracketsValue = "";
@@ -210,51 +207,56 @@ class Component {
       if (character == "{") {
         inBrackets = true;
       } else if (character == "}") {
-        if (insideBracketsValue == "this.children") {
-          returnString += this.childrenString;
-        } else if (
-          insideBracketsValue.substring(0, "this.props.".length) ==
-          "this.props."
-        ) {
-          // in-html <variable name="this.variableName">[insert variable value here]</variable>
-          // in-js-props-object `stuff here boop bap ${this.component.variableName} wow ${this.propName} ok ${this.component.children}`
-          // in-js-component-object `stuff here boop bap ${this.variableName} wow ${this.props.propName} ok ${this.children}`
-          // in-props-string "stuff stuff [insert variable value here] wow {this.variableName}"
+        // in-html <variable name="this.variableName">[insert variable value here]</variable>
+        // in-js-props-object `stuff here boop bap ${this.component.variableName} wow ${this.propName} ok ${this.component.children}`
+        // in-js-component-object `stuff here boop bap ${this.variableName} wow ${this.props.propName} ok ${this.children}`
+        // in-props-string "stuff stuff [insert variable value here] wow {this.variableName}"
 
-          let variable;
+        let variable;
+        const variableName = this.getVariableName(insideBracketsValue);
 
-          if (type == 0) {
-            variable =
-              this.props[insideBracketsValue.substring("this.props.".length)]
-                .value;
-          } else if (type == 1) {
-            if (this.isPropVariable(insideBracketsValue)) {
-              variable =
-                "this." + insideBracketsValue.substring("this.props.".length);
-            } else {
-              variable =
-                "this.component." +
-                insideBracketsValue.substring("this.".length);
-            }
-          } else if (type == 2) {
+        if (type == 0) {
+          if (this.isPropVariable(insideBracketsValue)) {
+            variable = this.props[variableName].value;
+          } else {
+            if (!this.variables[variableName])
+              this.variables[variableName] = {};
+
+            variable = "";
+          }
+        } else if (type == 1) {
+          if (this.isPropVariable(insideBracketsValue)) {
+            variable = "this." + variableName;
+          } else {
+            variable = "this.component." + variableName;
+          }
+        } else if (type == 2) {
+          variable = insideBracketsValue.replaceAll("{", "${");
+        } else {
+          if (this.isPropVariable(insideBracketsValue)) {
+            variable = this.props[variableName].value;
+          } else {
             variable = insideBracketsValue;
-          } else {
-            if (this.isPropVariable(insideBracketsValue)) {
-              variable =
-                this.props[insideBracketsValue.substring("this.props.".length)]
-                  .value;
-            } else {
-              variable = insideBracketsValue;
-            }
-          }
 
-          if (type == 0) {
-            returnString += `<variable name="${insideBracketsValue}">${variable}</variable>`;
-          } else if (type == 1 || type == 2) {
-            returnString += "${" + variable + "}";
-          } else {
-            returnString += variable;
+            if (!this.variables[variableName]) {
+              this.variables[variableName] = {};
+            }
+            if (!this.variables[variableName][this.elementCount]) {
+              this.variables[variableName][this.elementCount] = {};
+            }
+
+            this.variables[variableName][this.elementCount][
+              capitaliseFirstLetter(attributeName)
+            ] = text.replaceAll("{", "${");
           }
+        }
+
+        if (type == 0) {
+          returnString += `<variable name="${insideBracketsValue}">${variable}</variable>`;
+        } else if (type == 1 || type == 2) {
+          returnString += "${" + variable + "}";
+        } else {
+          returnString += variable;
         }
 
         inBrackets = false;
@@ -267,6 +269,12 @@ class Component {
     }
 
     return returnString;
+  }
+
+  getVariableName(text) {
+    if (this.isPropVariable(text)) {
+      return text.substring("this.props.".length);
+    } else return text.substring("this.".length);
   }
 
   isPropVariable(variableName) {
@@ -293,6 +301,28 @@ class Component {
     return Object.keys(foundVariableNames);
   }
 
+  variableSettersObjectToString(variableSettersObject) {
+    let script = "{";
+
+    if (variableSettersObject["value"]) {
+      delete variableSettersObject["value"];
+    }
+
+    for (const elementId in variableSettersObject) {
+      script += `"${elementId}": {`;
+
+      for (const dynamicAttributeName in variableSettersObject[elementId]) {
+        script += `"${dynamicAttributeName}": \`${variableSettersObject[elementId][dynamicAttributeName]}\``;
+      }
+
+      script += "}";
+    }
+
+    script += "}";
+
+    return script;
+  }
+
   transpileJs() {
     const jsTag = getElementByTagName(this.componentHtml, "js");
     let mainJs = "";
@@ -308,84 +338,79 @@ class Component {
     }
 
     this.app.script += `
-    class ${this.className} {
-      private element: any = document.querySelector("div[data-component-id='${this.componentId}']");
-      private componentId: number = ${this.componentId};
-      private children: string = \`${this.childrenString}\`;
-      private childrenArray:any = (function () {
-        const temp = document.createElement("div");
-        temp.innerHTML = \`${this.childrenString}\`;
-        return temp;
-      })();
-      public props: any = {
-        component: this,
+    class ${this.className} extends _Component {
+      constructor(props) {
+        super(${this.componentId}, props, \`${this.childrenString}\`, {
+        component: undefined,
       `;
 
     for (const propName in this.props) {
+      console.log(this.props[propName]);
       this.app.script += `
       ${propName}: "${this.props[propName].value}",
       set${capitaliseFirstLetter(propName)}: function(newValue) {
         this.${propName} = newValue;
-
-        for (const element of document.querySelectorAll("variable[name='this.props.${propName}']")) {
-          element.innerHTML = newValue;
+        _setVariableTags(this.component.element, this.props.${propName}, newValue);
+        ${
+          Object.keys(this.props[propName]).length > 1
+            ? `
+        _setDynamicAttributes(${this.variableSettersObjectToString(
+          this.props[propName]
+        )})`
+            : ""
         }
+      }
       `;
-
-      if (Object.keys(this.props[propName]).length != 0) {
-        this.app.script += `
-        let tempElement;
-        let tempComponentId;
-        `;
-      }
-
-      for (const elementId in this.props[propName]) {
-        if (elementId != "value") {
-          this.app.script += `
-        tempElement = this.component.element.querySelector("[data-element-id='${elementId}']");
-        const commponentId = tempElement.getAttribute("data-component-id");
-        if (commponentId) tempElement = components["component" + componentId];
-        `;
-
-          for (const dynamicAttributeName in this.props[propName][elementId]) {
-            const attributeSetterString = this.props[propName][elementId][
-              dynamicAttributeName
-            ]
-              .replaceAll("{", "${")
-              .replaceAll("this.props.", "this.");
-
-            this.app.script += `
-          tempElement.setAttribute("${capitaliseFirstLetter(
-            dynamicAttributeName
-          )}", \`${this.replacePropStrings(
-              attributeSetterString,
-              DynamicStringTypes.INJSPROPSOBJECT
-            )}\`);
-          `;
-          }
-        }
-      }
-
-      this.app.script += "},";
     }
 
-    this.app.script += "};";
+    this.app.script += "})};";
 
     this.app.script += `
-      constructor(props) {
-        Object.assign(this.props, props);
-
-        if (this.init) this.init();
-      }
-
       setAttribute(attributeName, newValue) {
         this.props["set" + attributeName](newValue);
       }
 
       ${mainJs}
-    }
     `;
+
+    for (const variableName in this.variables) {
+      this.app.script += `set${capitaliseFirstLetter(variableName)}(newValue) {
+        this.${variableName} = newValue;
+        _setVariableTags(this.element, this.${variableName}, newValue);
+        ${
+          Object.keys(this.variables[variableName]).length != 0
+            ? `
+        _setDynamicAttributes(${this.variableSettersObjectToString(
+          this.variables[variableName]
+        )})`
+            : ""
+        }
+      }
+      `;
+    }
   }
 }
 
 module.exports = Component;
+
+// 165
+// 148
+
+/*
+for (const elementId in this.variables[variableName]) {
+        this.app.script += `
+        tempElement = this.element.querySelector("[data-element-id='${elementId}']");
+        tempComponentId = tempElement.getAttribute("data-component-id");
+        if (tempComponentId) tempElement = components["component" + tempComponentId];
+        `;
+
+        for (const dynamicAttributeName in this.variables[variableName][
+          elementId
+        ]) {
+          this.app.script += `tempElement.setAttribute("${dynamicAttributeName}", \`${this.replacePropStrings(
+            this.variables[variableName][elementId][dynamicAttributeName],
+            DynamicStringTypes.INJSCOMPONENTOBJECT
+          )}\`)`;
+        }
+      }
+*/
