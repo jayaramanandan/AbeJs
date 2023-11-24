@@ -23,9 +23,9 @@ class App {
     }
   }
 
-  function _setDynamicAttributes(settersObject) {
+  function _setDynamicAttributes(componentElement, settersObject) {
     for (const elementId in settersObject) {
-      tempElement = this.element.querySelector(
+      tempElement = componentElement.querySelector(
         "[data-element-id='" + elementId + "']"
       );
       tempComponentId = tempElement.getAttribute("data-component-id");

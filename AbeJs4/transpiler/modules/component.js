@@ -350,11 +350,11 @@ class Component {
       ${propName}: "${this.props[propName].value}",
       set${capitaliseFirstLetter(propName)}: function(newValue) {
         this.${propName} = newValue;
-        _setVariableTags(this.component.element, this.props.${propName}, newValue);
+        _setVariableTags(this.component.element, "this.props.${propName}", newValue);
         ${
           Object.keys(this.props[propName]).length > 1
             ? `
-        _setDynamicAttributes(${this.variableSettersObjectToString(
+        _setDynamicAttributes(this.component.element, ${this.variableSettersObjectToString(
           this.props[propName]
         )})`
             : ""
@@ -376,11 +376,11 @@ class Component {
     for (const variableName in this.variables) {
       this.app.script += `set${capitaliseFirstLetter(variableName)}(newValue) {
         this.${variableName} = newValue;
-        _setVariableTags(this.element, this.${variableName}, newValue);
+        _setVariableTags(this.element, "this.${variableName}", newValue);
         ${
           Object.keys(this.variables[variableName]).length != 0
             ? `
-        _setDynamicAttributes(${this.variableSettersObjectToString(
+        _setDynamicAttributes(this.element, ${this.variableSettersObjectToString(
           this.variables[variableName]
         )})`
             : ""
@@ -393,6 +393,8 @@ class Component {
 
 module.exports = Component;
 
-// 165
-// 148
-// 139
+// jsx
+// make dynamic events
+// make styles
+// make non-frontend
+// make
