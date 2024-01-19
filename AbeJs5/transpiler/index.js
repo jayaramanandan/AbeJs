@@ -15,8 +15,6 @@ const commands = {
         undefined,
         path.join(process.cwd(), rootFile)
       );
-
-      console.log(rootComponent.imports);
     }
   },
 
