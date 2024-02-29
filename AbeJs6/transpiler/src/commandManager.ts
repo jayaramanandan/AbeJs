@@ -1,4 +1,4 @@
-class CommandLine {
+class commandManager {
   private commands: { [name: string]: Function } = {};
 
   public addDefaultCommand(callback: Function) {
@@ -56,4 +56,4 @@ class CommandLine {
   }
 }
 
-export default CommandLine;
+export default commandManager;
