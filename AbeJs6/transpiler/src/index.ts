@@ -1,5 +1,5 @@
-import CommandLine from "./commandLine";
+import CommandManager from "./commandManager";
 
-const cmd: CommandLine = new CommandLine();
+const cmd: CommandManager = new CommandManager();
 
 cmd.executeCommand(process.argv, process.execPath);
