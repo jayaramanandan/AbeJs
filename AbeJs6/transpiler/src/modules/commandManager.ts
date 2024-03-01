@@ -25,6 +25,10 @@ class CommandManager {
     this.commands[commandName] = callback;
   }
 
+  public getCwd() {
+    return process.cwd();
+  }
+
   public executeCommand(processArgs: string[], processExecPath: string): void {
     // should be called when the file is run
 
@@ -47,10 +51,10 @@ class CommandManager {
       this.commands["_default"]();
     } else if (this.commands[processArgs[commandNameIndex]] == undefined) {
       // executes if command name is not found in list of commands
-      this.commands["_notFound"]();
+      this.commands["_notFound"](processArgs[commandNameIndex]);
     } else {
       this.commands[processArgs[commandNameIndex]](
-        ...processArgs.splice(0, commandNameIndex - 1)
+        ...processArgs.splice(commandNameIndex + 1, processArgs.length)
       );
     }
   }
