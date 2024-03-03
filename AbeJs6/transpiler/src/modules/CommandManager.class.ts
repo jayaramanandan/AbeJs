@@ -1,12 +1,12 @@
 class CommandManager {
   private commands: { [name: string]: Function } = {};
 
-  public addDefaultCommand(callback: Function) {
+  public addDefaultCommand(callback: Function): void {
     // adds a action when no command name given
     this.commands["_default"] = callback;
   }
 
-  public addCommandNotFoundErrorMessage(callback: Function) {
+  public addCommandNotFoundErrorMessage(callback: Function): void {
     this.commands["_notFound"] = callback;
   }
 
@@ -25,7 +25,7 @@ class CommandManager {
     this.commands[commandName] = callback;
   }
 
-  public getCwd() {
+  public getCwd(): string {
     return process.cwd();
   }
 

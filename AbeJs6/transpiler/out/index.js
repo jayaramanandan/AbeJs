@@ -4,8 +4,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const path_1 = __importDefault(require("path"));
-const commandManager_1 = __importDefault(require("./modules/commandManager"));
-const cmd = new commandManager_1.default();
+const CommandManager_class_1 = __importDefault(require("./modules/CommandManager.class"));
+const Project_class_1 = __importDefault(require("./modules/Project.class"));
+const cmd = new CommandManager_class_1.default();
 cmd.addDefaultCommand(() => {
     console.log("AbeJs Command Line Tool");
 });
@@ -18,5 +19,6 @@ cmd.addCommand("run", (filePath) => {
         process.exit();
     }
     const rootFilePath = path_1.default.join(cmd.getCwd(), filePath);
+    const project = new Project_class_1.default(rootFilePath);
 });
 cmd.executeCommand(process.argv, process.execPath);

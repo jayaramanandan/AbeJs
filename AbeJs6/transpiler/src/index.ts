@@ -1,6 +1,6 @@
 import path from "path";
-import CommandManager from "./modules/commandManager";
-import Project from "./modules/project";
+import CommandManager from "./modules/CommandManager.class";
+import Project from "./modules/Project.class";
 
 const cmd: CommandManager = new CommandManager();
 
