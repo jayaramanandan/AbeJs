@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "start": "tsc && node out/index.js run ../test-app/Project.html"
+    "start": "tsc && node dist/index.js run ../test-app/Project.html --clear-cache"
   },
   "author": "",
   "license": "ISC",

@@ -19,8 +19,8 @@ class Utils {
     return parent.getElementsByTagName(tagName)[0];
   }
 
-  public static errorMessage(message: string): void {
-    console.log(message);
+  public static errorMessage(message: string, filePath: string): void {
+    console.error(`Error ${message}\n\nOccurred at (${filePath})`);
     process.exit();
   }
 
