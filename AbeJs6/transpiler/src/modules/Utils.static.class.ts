@@ -1,8 +1,13 @@
 import { JSDOM } from "jsdom";
+import path from "path";
+import cliProgress, { SingleBar } from "cli-progress";
+
 import RulesObject from "./interfaces/RulesObject.interface";
 import NodeData from "./interfaces/NodeData.interface";
 
 class Utils {
+  private static bar: SingleBar;
+
   constructor() {
     // makes class static
     throw new Error();
@@ -67,6 +72,37 @@ class Utils {
         }
       }
     }
+  }
+
+  public static getPathStringDetails(src: string): {
+    src: string;
+    folder: string;
+    file: string;
+  } {
+    const { dir, base } = path.parse(src);
+    return {
+      src,
+      folder: dir,
+      file: base,
+    };
+  }
+
+  public static startProgressBarCmd(maxValue: number): void {
+    this.bar = new cliProgress.SingleBar(
+      {},
+      cliProgress.Presets.shades_classic
+    );
+
+    this.bar.start(maxValue, 0);
+  }
+
+  public static addProgressToBarCmd(progress: number): void {
+    this.bar.update(progress);
+  }
+
+  public static stopProgressBarCmd(): void {
+    this.bar.update(this.bar.getTotal());
+    this.bar.stop();
   }
 }
 

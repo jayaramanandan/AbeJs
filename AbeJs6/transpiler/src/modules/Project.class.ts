@@ -18,7 +18,18 @@ class Project {
 
     this.projectName = this.getProjectName();
 
+    const numberOfFiles: number = fs.readdirSync(
+      Utils.getPathStringDetails(this.rootFilePath).folder
+    ).length;
+
+    console.log("Compiling...");
+    Utils.startProgressBarCmd(numberOfFiles);
+
     this.compileProject();
+
+    Utils.addProgressToBarCmd(1);
+
+    Utils.stopProgressBarCmd();
   }
 
   private getProjectName(): string {
@@ -119,7 +130,9 @@ class Project {
 
         fs.mkdirSync(outFilePath, { recursive: true });
 
-        fs.writeFileSync(path.join(outFilePath, fileName || ""), "wow"); // dummy file content currently, add something
+        fs.writeFileSync(path.join(outFilePath, fileName || ""), "wow"); // dummy file content currently, add somethinga
+
+        Utils.addProgressToBarCmd(1);
       },
     });
   }
