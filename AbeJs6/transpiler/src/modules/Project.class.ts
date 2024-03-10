@@ -2,11 +2,14 @@ import fs from "fs";
 import path from "path";
 
 import Utils from "./Utils.static.class";
+import File from "./File.class";
+import FileStructure from "./interfaces/FileStructure.interface";
 
 class Project {
   private projectHtml: Document;
   private projectName: string;
   private rootFilePath: string;
+  private fileStructureDetails: FileStructure;
 
   constructor(rootFilePath: string) {
     this.rootFilePath = rootFilePath;
@@ -18,12 +21,11 @@ class Project {
 
     this.projectName = this.getProjectName();
 
-    const numberOfFiles: number = fs.readdirSync(
-      Utils.getPathStringDetails(this.rootFilePath).folder
-    ).length;
+    this.fileStructureDetails = this.getFileStructureDetails();
 
+    // starts progress bar - bar uses number of out files as total
     console.log("Compiling...");
-    Utils.startProgressBarCmd(numberOfFiles);
+    Utils.startProgressBarCmd(this.fileStructureDetails.numberOfFiles);
 
     this.compileProject();
 
@@ -57,7 +59,7 @@ class Project {
     return nameAttribute;
   }
 
-  private compileProject(): void {
+  private getFileStructureDetails(): FileStructure {
     const fileStructureComponent: Element = Utils.getElementByTagName(
       this.projectHtml,
       "FILESTRUCTURE"
@@ -69,72 +71,81 @@ class Project {
         this.rootFilePath
       );
 
-    Utils.traverseThroughElement(fileStructureComponent, {
-      "name == FOLDER": (folderComponent: Element) => {
-        const folderPath: string | null = folderComponent.getAttribute("path");
+    return {
+      fileStructureComponent,
+      numberOfFiles: fileStructureComponent.getElementsByTagName("FILE").length,
+    };
+  }
 
-        if (!folderPath)
-          Utils.errorMessage(
-            "'Folder' component does not have 'path' attribute.\n" +
-              folderComponent.outerHTML,
-            this.rootFilePath
+  private compileProject(): void {
+    Utils.traverseThroughElement(
+      this.fileStructureDetails.fileStructureComponent,
+      {
+        "name == FOLDER": (folderComponent: Element) => {
+          const folderPath: string | null =
+            folderComponent.getAttribute("path");
+
+          if (!folderPath)
+            Utils.errorMessage(
+              "'Folder' component does not have 'path' attribute.\n" +
+                folderComponent.outerHTML,
+              this.rootFilePath
+            );
+
+          // appends parent folder component path to current folder component path
+          let parentPath = "";
+          if (
+            folderComponent.parentElement &&
+            folderComponent.parentElement.tagName == "FOLDER"
+          ) {
+            parentPath =
+              "" &&
+              folderComponent.parentElement.getAttribute("data-full-path");
+          }
+
+          folderComponent.setAttribute(
+            "data-full-path",
+            path.join(parentPath, folderPath || "")
+          );
+        },
+
+        "name == FILE": (fileComponent: Element) => {
+          const fileName: string | null = fileComponent.getAttribute("name");
+
+          if (!fileName)
+            Utils.errorMessage(
+              "'File' component does not have 'name' attribute.\n" +
+                fileComponent.outerHTML,
+              this.rootFilePath
+            );
+
+          if (
+            fileComponent.parentElement &&
+            fileComponent.parentElement.tagName != "FOLDER"
+          ) {
+            Utils.errorMessage(
+              "'File' component must be within a 'Folder' component.\n" +
+                fileComponent.outerHTML,
+              this.rootFilePath
+            );
+          }
+
+          // creates out files
+
+          new File().createFile(
+            path.join(
+              __dirname,
+              "../../out",
+              fileComponent.parentElement?.getAttribute("data-full-path") || ""
+            ),
+            fileName
           );
 
-        // appends parent folder component path to current folder component path
-        let parentPath = "";
-        if (
-          folderComponent.parentElement &&
-          folderComponent.parentElement.tagName == "FOLDER"
-        ) {
-          parentPath =
-            "" && folderComponent.parentElement.getAttribute("data-full-path");
-        }
-
-        folderComponent.setAttribute(
-          "data-full-path",
-          path.join(parentPath, folderPath || "")
-        );
-      },
-
-      "name == FILE": (fileComponent: Element) => {
-        const fileName: string | null = fileComponent.getAttribute("name");
-
-        if (!fileName)
-          Utils.errorMessage(
-            "'File' component does not have 'name' attribute.\n" +
-              fileComponent.outerHTML,
-            this.rootFilePath
-          );
-
-        if (
-          fileComponent.parentElement &&
-          fileComponent.parentElement.tagName != "FOLDER"
-        ) {
-          Utils.errorMessage(
-            "'File' component must be within a 'Folder' component.\n" +
-              fileComponent.outerHTML,
-            this.rootFilePath
-          );
-        }
-
-        const fullFolderPath =
-          fileComponent.parentElement?.getAttribute("data-full-path");
-
-        // creates out files
-
-        const outFilePath: string = path.join(
-          __dirname,
-          "../../out",
-          fullFolderPath || ""
-        );
-
-        fs.mkdirSync(outFilePath, { recursive: true });
-
-        fs.writeFileSync(path.join(outFilePath, fileName || ""), "wow"); // dummy file content currently, add somethinga
-
-        Utils.addProgressToBarCmd(1);
-      },
-    });
+          // increments progress bar every time an out file is created
+          Utils.addProgressToBarCmd(1);
+        },
+      }
+    );
   }
 }
 
