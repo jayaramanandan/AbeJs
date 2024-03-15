@@ -4,14 +4,19 @@ import path from "path";
 import Utils from "./Utils.static.class";
 import File from "./File.class";
 import FileStructure from "./interfaces/FileStructure.interface";
+import Imports from "./interfaces/Imports.interface";
+import ComponentUtils from "./ComponentUtils.class";
 
-class Project {
+class Project extends ComponentUtils {
   private projectHtml: Document;
   private projectName: string;
   private rootFilePath: string;
   private fileStructureDetails: FileStructure;
+  private imports: Imports;
 
   constructor(rootFilePath: string) {
+    super();
+
     this.rootFilePath = rootFilePath;
 
     // reads root project file and converts string to html
@@ -24,12 +29,15 @@ class Project {
     this.fileStructureDetails = this.getFileStructureDetails();
 
     // starts progress bar - bar uses number of out files as total
-    console.log("Compiling...");
+    console.log(`Compiling ${this.projectName}...`);
     Utils.startProgressBarCmd(this.fileStructureDetails.numberOfFiles);
 
-    this.compileProject();
+    this.imports = this.getImports(
+      this.rootFilePath,
+      Utils.getElementByTagName(this.projectHtml, "imports")
+    );
 
-    Utils.addProgressToBarCmd(1);
+    this.compileProject();
 
     Utils.stopProgressBarCmd();
   }
@@ -132,7 +140,7 @@ class Project {
 
           // creates out files
 
-          new File().createFile(
+          new File(fileComponent, this.imports).createFile(
             path.join(
               __dirname,
               "../../out",
