@@ -1,8 +1,4 @@
-<<<<<<< HEAD:AbeJs6/transpiler/src/commandManager.ts
-class commandManager {
-=======
 class CommandManager {
->>>>>>> f1f13d9c7c8cebbb5852fb4b9ec90e55e668b340:AbeJs6/transpiler/src/modules/CommandManager.class.ts
   private commands: { [name: string]: Function } = {};
 
   public addDefaultCommand(callback: Function): void {
@@ -64,8 +60,4 @@ class CommandManager {
   }
 }
 
-<<<<<<< HEAD:AbeJs6/transpiler/src/commandManager.ts
-export default commandManager;
-=======
 export default CommandManager;
->>>>>>> f1f13d9c7c8cebbb5852fb4b9ec90e55e668b340:AbeJs6/transpiler/src/modules/CommandManager.class.ts
