@@ -1,11 +1,19 @@
 import path from "path";
 import Utils from "./Utils.static.class";
 import Imports from "./interfaces/Imports.interface";
+import Component from "./Component.class";
 import ComponentBlueprint from "./ComponentBlueprint.class";
 
 class ComponentUtils {
-  public getImports(rootFilePath: string, importsTag: Element): Imports {
+  public static getImports(
+    rootFilePath: string,
+    componentHtml: Element | Document
+  ): Imports {
     const imports: Imports = {};
+    const importsTag: Element = Utils.getElementByTagName(
+      componentHtml,
+      "imports"
+    );
 
     if (importsTag) {
       Utils.traverseThroughElement(importsTag, {
@@ -15,9 +23,13 @@ class ComponentUtils {
 
           if (importSrc) {
             // compiles imported component
-            const importedComponent: ComponentBlueprint = new Co(
-              path.join(rootFilePath, importSrc)
-            );
+            const importedComponent: ComponentBlueprint =
+              new ComponentBlueprint(
+                path.join(
+                  Utils.getPathStringDetails(rootFilePath).folder,
+                  importSrc
+                )
+              );
 
             // adds import
             imports[importedComponent.getName()] = importedComponent;
@@ -29,6 +41,8 @@ class ComponentUtils {
           }
         },
       });
+
+      importsTag.remove();
     }
 
     return imports;

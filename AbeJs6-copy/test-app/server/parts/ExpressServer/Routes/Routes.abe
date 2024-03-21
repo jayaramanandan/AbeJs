@@ -1,0 +1,9 @@
+<Component name="Routes">
+    <Structure>
+        app.get("/", (req, res)=>{
+            res.send("hello");
+        });
+    </Structure>
+
+    <Script src="./Routes.js.abe"></Script>
+</Component>

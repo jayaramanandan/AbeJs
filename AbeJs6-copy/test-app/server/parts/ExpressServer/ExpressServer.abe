@@ -1,0 +1,11 @@
+<Imports>
+    <Import src="./Routes/Routes.abe"></Import>
+</Imports>
+
+const express = require("express");
+
+const app = express();
+
+<Routes></Routes>
+
+app.listen(5000);

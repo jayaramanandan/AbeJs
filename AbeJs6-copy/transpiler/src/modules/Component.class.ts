@@ -1,5 +1,5 @@
 class Component {
-  constructor(parentNode: Element | ChildNode) {}
+  constructor(parentNode: ChildNode | Element) {}
 
   public getName(): string {
     return "";

@@ -1,0 +1,22 @@
+{
+  "name": "abe-js",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsc && node dist/index.js run ../test-app/Project.html --clear-cache"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/cli-progress": "^3.11.5",
+    "@types/jsdom": "^21.1.6",
+    "@types/node": "^20.11.20",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "cli-progress": "^3.12.0",
+    "jsdom": "^24.0.0"
+  }
+}
