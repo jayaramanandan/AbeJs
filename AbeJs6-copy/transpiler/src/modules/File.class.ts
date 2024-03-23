@@ -3,20 +3,25 @@ import path from "path";
 
 import Imports from "./interfaces/Imports.interface";
 import Component from "./Component.class";
+import ComponentUtils from "./ComponentUtils.class";
 
 class File {
-  private transpiledString: string;
+  private transpiledString: string = "";
   private imports: Imports;
 
   constructor(fileContentsHtml: Element, imports: Imports) {
-    this.transpiledString = this.transpileHtml(fileContentsHtml);
     this.imports = imports;
+    this.transpileHtml(fileContentsHtml);
   }
 
-  public transpileHtml(parentNode: Element): string {
-    const transpiledComponent: Component = new Component(parentNode);
-
-    return "";
+  public transpileHtml(parentNode: Element): void {
+    for (const node of parentNode.childNodes) {
+      this.transpiledString += new Component(
+        node,
+        this.imports,
+        ComponentUtils.getFileComponentRules()
+      ).getTranspiledHtml();
+    }
   }
 
   public createFile(folderPath: string | null, fileName: string | null) {
@@ -24,7 +29,10 @@ class File {
     fs.mkdirSync(folderPath || "", { recursive: true });
 
     // creates files and contents
-    fs.writeFileSync(path.join(folderPath || "", fileName || ""), "hello"); // dummy file content currently, add something
+    fs.writeFileSync(
+      path.join(folderPath || "", fileName || ""),
+      this.transpiledString
+    ); // dummy file content currently, add something
   }
 }
 

@@ -1,5 +1,7 @@
 interface NodeData {
-  [dataKey: string]: number | string;
+  name: string;
+  hasValidName: boolean;
+  type: number;
 }
 
 export default NodeData;

@@ -26,7 +26,7 @@ class Utils {
   }
 
   public static errorMessage(message: string, filePath: string): void {
-    console.error(`Error ${message}\n\nOccurred at (${filePath})`);
+    console.error(`Error ${message}\nOccurred at (${filePath})`);
     process.exit();
   }
 
@@ -43,6 +43,7 @@ class Utils {
     for (const node of parentNode.childNodes) {
       const nodeData: NodeData = {
         name: node.nodeName,
+        hasValidName: Utils.isValidElement(node),
         type: node.nodeType,
       }; // stores the node data we are interested in (mainly for perfomance)
 
@@ -53,12 +54,13 @@ class Utils {
   }
 
   private static executeRule(
-    nodeData: { [key: string]: string | number },
+    nodeData: NodeData,
     node: ChildNode,
     rules: RulesObject
   ): void {
     // for each node property we are interested in
     for (const dataKey in nodeData) {
+      // @ts-ignore
       const ruleName: string = `${dataKey} == ${nodeData[dataKey]}`;
       // identifies the key/condition that should be in rules
 
@@ -115,6 +117,10 @@ class Utils {
     carrierElement.innerHTML = text;
 
     return carrierElement;
+  }
+
+  public static isValidElement(element: Element | ChildNode): boolean {
+    return element.toString() != "[object HTMLUnknownElement]";
   }
 }
 

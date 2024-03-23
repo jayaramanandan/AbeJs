@@ -2,10 +2,10 @@ import fs from "fs";
 import path from "path";
 
 import Utils from "./Utils.static.class";
-import File from "./File.class";
 import FileStructure from "./interfaces/FileStructure.interface";
 import Imports from "./interfaces/Imports.interface";
 import ComponentUtils from "./ComponentUtils.class";
+import Component from "./Component.class";
 
 class Project {
   private projectHtml: Document;
@@ -86,6 +86,19 @@ class Project {
   private compileProject(): void {
     Utils.traverseThroughElement(
       this.fileStructureDetails.fileStructureComponent,
+      ComponentUtils.getProjectComponentRules(this.rootFilePath, this.imports)
+    );
+
+    /*
+    new Component(
+      this.fileStructureDetails.fileStructureComponent,
+      this.imports,
+      ComponentUtils.getProjectComponentRules(this.rootFilePath, this.imports)
+    );*/
+
+    /*
+    Utils.traverseThroughElement(
+      this.fileStructureDetails.fileStructureComponent,
       {
         "name == FOLDER": (folderComponent: Element) => {
           const folderPath: string | null =
@@ -151,7 +164,7 @@ class Project {
           Utils.addProgressToBarCmd(1);
         },
       }
-    );
+    );*/
   }
 }
 
