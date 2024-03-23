@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+import CommandManager from "./commandManager";
+
+const cmd: CommandManager = new CommandManager();
+=======
 import path from "path";
 import fs from "fs";
 
@@ -28,5 +33,6 @@ cmd.addCommand("run", (filePath: string, ...flags: string[]) => {
 
   const project: Project = new Project(rootFilePath);
 });
+>>>>>>> f1f13d9c7c8cebbb5852fb4b9ec90e55e668b340
 
 cmd.executeCommand(process.argv, process.execPath);
